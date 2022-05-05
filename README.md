@@ -100,3 +100,9 @@ unless overwritten by the parameter `target_basename`.
 * `dependency_update`: must be set to `true` if there are any dependencies in the
    helm chart to be uploaded. This will cause the dependencies to be fetched
    before the chart is packaged.
+
+* `push_url`: An alternative address of the Chartmuseum API when pushing the Chart.
+
+* `tls_client_cert`: Identify HTTPS client using this SSL certificate string
+
+* `tls_client_key`: dentify HTTPS client using this SSL key string
