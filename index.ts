@@ -32,7 +32,9 @@ interface Request {
         version_range?: string
         basic_auth_username?: string
         basic_auth_password?: string
-        harbor_api?: boolean        
+        harbor_api?: boolean
+        tls_cert_file?: string
+        tls_key_file?: string
     }
 }
 
@@ -80,6 +82,9 @@ export interface OutRequest extends Request {
         version_file?: string
         force?: boolean
         dependency_update?: boolean
+        push_url?: string
+        tls_client_cert?: string
+        tls_client_key?: string
     }
 }
 
