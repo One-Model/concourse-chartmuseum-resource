@@ -109,11 +109,11 @@ export default async function out(): Promise<{ data: Object, cleanupCallback: ((
         key: "",
         rejectUnauthorized: false,
         keepAlive: false
-      };
+    };
     
-      if (request.params.tls_client_cert != null && request.params.tls_client_key) {
+      if (request.params.tls_client_cert != null && request.params.tls_client_key != null) {
         options.cert = request.params.tls_client_cert;
-        options.key = request.params.tls_client_cert;
+        options.key = request.params.tls_client_key;
     }
 
     const sslConfiguredAgent = new https.Agent(options);
