@@ -6,7 +6,7 @@ import * as util from "util";
 
 import fetch from "node-fetch";
 
-import { retrieveRequestFromStdin, createFetchHeaders } from "./index";
+import { retrieveRequestFromStdin, createFetchAgent, createFetchHeaders } from "./index";
 import { InRequest, InResponse } from "./index";
 
 // Promisified funtions from the Node.js standard library.
@@ -25,8 +25,10 @@ const writeFile = util.promisify(fs.writeFile);
 
     const headers = createFetchHeaders(request);
 
+    const agent = createFetchAgent(request);
+
     // Fetch metadata
-    const chartResp = await fetch(`${request.source.server_url}/${request.source.chart_name}/${request.version.version}`, { headers: headers });
+    const chartResp = await fetch(`${request.source.server_url}/${request.source.chart_name}/${request.version.version}`, { agent: agent, headers: headers });
     const chartJson = await chartResp.json();
 
     if (request.source.harbor_api === true) {
@@ -51,10 +53,10 @@ const writeFile = util.promisify(fs.writeFile);
 
         var non_api_server_url = request.source.server_url.replace("api/","")
 
-        const tgzResp = await fetch(`${non_api_server_url}/${request.source.chart_name}-${chartJson.metadata.version}.tgz`, { headers: headers });
+        const tgzResp = await fetch(`${non_api_server_url}/${request.source.chart_name}-${chartJson.metadata.version}.tgz`, { agent: agent, headers: headers });
         await writeFile(path.resolve(destination, `${targetBasename}.tgz`), await tgzResp.buffer());
 
-        const provResp = await fetch(`${non_api_server_url}/${request.source.chart_name}-${chartJson.metadata.version}.tgz.prov`, { headers: headers });
+        const provResp = await fetch(`${non_api_server_url}/${request.source.chart_name}-${chartJson.metadata.version}.tgz.prov`, { agent: agent, headers: headers });
         await writeFile(path.resolve(destination, `${targetBasename}.tgz.prov`), await provResp.buffer());
 
         await writeFile(path.resolve(destination, `${targetBasename}.json`), JSON.stringify(chartJson));
@@ -84,10 +86,10 @@ const writeFile = util.promisify(fs.writeFile);
 
         var non_api_server_url = request.source.server_url.replace("api/","")
 
-        const tgzResp = await fetch(`${non_api_server_url}/${request.source.chart_name}-${chartJson.version}.tgz`, { headers: headers });
+        const tgzResp = await fetch(`${non_api_server_url}/${request.source.chart_name}-${chartJson.version}.tgz`, { agent: agent, headers: headers });
         await writeFile(path.resolve(destination, `${targetBasename}.tgz`), await tgzResp.buffer());
 
-        const provResp = await fetch(`${non_api_server_url}/${request.source.chart_name}-${chartJson.version}.tgz.prov`, { headers: headers });
+        const provResp = await fetch(`${non_api_server_url}/${request.source.chart_name}-${chartJson.version}.tgz.prov`, { agent: agent, headers: headers });
         await writeFile(path.resolve(destination, `${targetBasename}.tgz.prov`), await provResp.buffer());
 
         await writeFile(path.resolve(destination, `${targetBasename}.json`), JSON.stringify(chartJson));

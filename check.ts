@@ -4,7 +4,7 @@ import fetch, { Headers } from "node-fetch";
 import * as semver from "semver";
 
 import { CheckRequest, CheckResponse } from "./index";
-import { retrieveRequestFromStdin, createFetchHeaders } from "./index";
+import { retrieveRequestFromStdin, createFetchAgent, createFetchHeaders } from "./index";
 
 const stdin = process.stdin;
 const stdout = process.stdout;
@@ -17,8 +17,10 @@ const stderr = process.stderr;
 
     const headers = createFetchHeaders(request);
 
+    const agent = createFetchAgent(request);
+
     // Requests the charts from the remote endpoint.
-    let charts = await (await fetch(`${request.source.server_url}/${request.source.chart_name}`, { headers: headers })).json() as any[];
+    let charts = await (await fetch(`${request.source.server_url}/${request.source.chart_name}`, { agent: agent, headers: headers })).json() as any[];
 
     // If a version has been specified in the check request, we'll use it to filter out all results
     // that are "smaller" by using semver's built-in comparison mechanism.

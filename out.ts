@@ -10,12 +10,11 @@ import * as rimraf from "rimraf";
 import * as FormData from "form-data";
 
 import fetch, { Response } from "node-fetch";
-import * as https from 'https';
 import * as tmp from "tmp";
 import * as yaml from "yamljs";
 import { retry } from 'ts-retry-promise';
 
-import { retrieveRequestFromStdin, createFetchHeaders } from "./index";
+import { retrieveRequestFromStdin, createFetchAgent, createFetchHeaders } from "./index";
 import { OutRequest, OutResponse } from "./index";
 
 const exec = util.promisify(child_process.exec);
@@ -104,21 +103,7 @@ export default async function out(): Promise<{ data: Object, cleanupCallback: ((
 
     let headers = createFetchHeaders(request);
 
-    let options = {
-        cert: "",
-        key: "",
-        rejectUnauthorized: false,
-        keepAlive: false
-    };
-    
-      if (request.params.tls_client_cert != null && request.params.tls_client_key != null) {
-        options.cert = request.params.tls_client_cert;
-        options.key = request.params.tls_client_key;
-    }
-
-    const sslConfiguredAgent = new https.Agent(options);
-
-    const push_url = (request.params.push_url)? `${request.params.push_url}` : `${request.source.server_url}`;
+    const agent = createFetchAgent(request);
 
     // If either params.version or params.version_file have been specified,
     // we'll read our version information for packaging the Helm Chart from
@@ -251,26 +236,25 @@ export default async function out(): Promise<{ data: Object, cleanupCallback: ((
 
     let postResult: Response;
     try {
-        let postUrl = push_url;
+        let postUrl = `${request.source.server_url}`;
         if (request.params.force) {
             postUrl += "?force=true"
         }
-
         postResult = await fetch(postUrl, {
             method: "POST",
+            agent: agent,
             headers: headers,
-            agent: sslConfiguredAgent,
             body: body
         });
     } catch (e) {
-        process.stderr.write(`Upload of chart file to "${push_url}" has failed.\n`);
+        process.stderr.write(`Upload of chart file to "${request.source.server_url}" has failed.\n`);
         process.stderr.write(JSON.stringify(JSON.stringify(e)));
         process.exit(124);
         throw e; // Tricking the typescript compiler.
     }
 
     if (postResult.status != 201) {
-        process.stderr.write(`An error occured while uploading the chart to "${push_url}" : "${postResult.status} - ${postResult.statusText}".\n`);
+        process.stderr.write(`An error occured while uploading the chart to "${request.source.server_url}" : "${postResult.status} - ${postResult.statusText}".\n`);
         process.exit(postResult.status);
     }
 
@@ -289,13 +273,12 @@ export default async function out(): Promise<{ data: Object, cleanupCallback: ((
 
     // Fetch Chart that has just been uploaded.
     headers = createFetchHeaders(request); // We need new headers. (Content-Length should be "0" again...)
-    const chartInfoUrl = `${push_url}/${request.source.chart_name}/${version}`;
+    const chartInfoUrl = `${request.source.server_url}/${request.source.chart_name}/${version}`;
     process.stderr.write(`Fetching chart data from "${chartInfoUrl}"...\n`);
 
-
     const chartResp = await fetch(
-        `${push_url}/${request.source.chart_name}/${version}`,
-        { headers: headers, agent: sslConfiguredAgent });
+        `${request.source.server_url}/${request.source.chart_name}/${version}`,
+        { agent: agent, headers: headers });
 
     if (!chartResp.ok) {
         process.stderr.write("Download of chart information failed.\n")
