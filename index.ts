@@ -1,4 +1,5 @@
 import { Headers } from "node-fetch";
+import { Agent } from "https";
 
 export async function retrieveRequestFromStdin<T extends any>(): Promise<T> {
     return new Promise<T>((resolve, reject) => {
@@ -13,6 +14,25 @@ export async function retrieveRequestFromStdin<T extends any>(): Promise<T> {
             }
         });
     });
+}
+
+export function createFetchAgent<R extends CheckRequest>(request: R): Agent {
+    let options = {
+        ca: "",
+        cert: "",
+        key: "",
+        keepAlive: false
+    };
+    
+    if (request.source.tls_ca_cert != null && request.source.tls_client_cert != null && request.source.tls_client_key != null) {
+        options.ca = request.source.tls_ca_cert;
+        options.cert = request.source.tls_client_cert;
+        options.key = request.source.tls_client_key;
+    }
+
+    const sslConfiguredAgent = new Agent(options);
+
+    return sslConfiguredAgent;
 }
 
 export function createFetchHeaders<R extends CheckRequest>(request: R): Headers {
@@ -33,8 +53,9 @@ interface Request {
         basic_auth_username?: string
         basic_auth_password?: string
         harbor_api?: boolean
-        tls_cert_file?: string
-        tls_key_file?: string
+        tls_ca_cert?: string
+        tls_client_cert?: string
+        tls_client_key?: string
     }
 }
 
@@ -82,9 +103,6 @@ export interface OutRequest extends Request {
         version_file?: string
         force?: boolean
         dependency_update?: boolean
-        push_url?: string
-        tls_client_cert?: string
-        tls_client_key?: string
     }
 }
 
