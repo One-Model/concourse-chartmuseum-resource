@@ -21,7 +21,7 @@ export function createFetchAgent<R extends CheckRequest>(request: R): Agent {
         keepAlive: false
     };
 
-    if (request.source.tls_ca_cert) {
+    if (request.source.tls_ca_cert != null) {
         options.ca = request.source.tls_ca_cert;
     }
 
