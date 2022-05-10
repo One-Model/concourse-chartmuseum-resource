@@ -14,7 +14,7 @@ import * as tmp from "tmp";
 import * as yaml from "yamljs";
 import { retry } from 'ts-retry-promise';
 
-import { retrieveRequestFromStdin, createFetchAgent, createFetchHeaders } from "./index";
+import { retrieveRequestFromStdin, createFetchAgent, createFetchHeaders, Repository } from "./index";
 import { OutRequest, OutResponse } from "./index";
 
 const exec = util.promisify(child_process.exec);
@@ -121,6 +121,59 @@ export default async function out(): Promise<{ data: Object, cleanupCallback: ((
         if (!semver.satisfies(version, versionRange)) {
             process.stderr.write(`params.version (${version}) does not satisfy contents of source.version_range (${versionRange}).\n`)
             process.exit(104);
+        }
+    }
+
+    // Add Remote Helm Repo Dependencies
+    if (request.params.dependency_repos != null) {
+        process.stderr.write(`Processing chart Helm Repo Dependencies...\n`)
+        for (const [name, repo] of Object.entries(request.params.dependency_repos)) {
+            let addCmd = [
+                "helm",
+                "repo",
+                "add"
+            ];
+
+            if (repo.basic_auth_username != null && repo.basic_auth_password != null) {
+                addCmd.push("--username");
+                addCmd.push(repo.basic_auth_username );
+                addCmd.push("--password");
+                addCmd.push(repo.basic_auth_password );
+            }
+
+            if (repo.tls_ca_cert != null && repo.tls_client_cert != null && repo.tls_client_key != null) {
+                const tlsDir = await createTmpDir();
+
+                addCmd.push("--ca-file");
+                let caFile = path.resolve(tlsDir.path, "ca.pem");
+                await writeFile(caFile, repo.tls_ca_cert);
+                addCmd.push(caFile);
+
+                addCmd.push("--cert-file");
+                let certFile = path.resolve(tlsDir.path, "cert.pem");
+                await writeFile(certFile, repo.tls_client_cert);
+                addCmd.push(certFile);
+
+
+                addCmd.push("--key-file");
+                let keyFile = path.resolve(tlsDir.path, "key.pem");
+                await writeFile(keyFile, repo.tls_client_key);
+                addCmd.push(keyFile);
+            }
+            
+            addCmd.push(name);
+            addCmd.push(repo.server_url);
+
+            try {
+                process.stderr.write(`Performing \"helm add ${name} ${repo.server_url}\"...\n`);
+                await exec(addCmd.join(" "));
+            } catch (e) {
+                if (e.stderr != null) {
+                    process.stderr.write(`${e.stderr}\n`);
+                }
+                process.stderr.write(`Adding Helm Repo failed.\n`);
+                process.exit(193);
+            }
         }
     }
 
