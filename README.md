@@ -107,19 +107,18 @@ unless overwritten by the parameter `target_basename`.
    helm chart to be uploaded. This will cause the dependencies to be fetched
    before the chart is packaged.
 
-* `dependency_repos`: list of remote Helm Chart Repositories
-  * `name`: *Required* The name of the chart repository.
+* `dependency_repos`: Map <string, repository> of remote Helm Chart Repositories
+  * `name`: The key and name of the chart repository.
+    * `server_url`: *Required.* The address of the repository.
 
-  * `server_url`: *Required.* The address of the repository.
+    * `basic_auth_username`: chart repository username.
+      If provided, the paramter `basic_auth_password` must also be specified.
 
-  * `basic_auth_username`: chart repository username.
-    If provided, the paramter `basic_auth_password` must also be specified.
+    * `basic_auth_password`: Optional chart repository password.
+      If provided, the paramter `basic_auth_username` must also be specified.
 
-  * `basic_auth_password`: Optional chart repository password.
-    If provided, the paramter `basic_auth_username` must also be specified.
+    * `tls_ca_cert`: CA certificate for the Chartmuseum server
 
-  * `tls_ca_cert`: CA certificate for the Chartmuseum server
+    * `tls_client_cert`: Identify HTTPS client using this SSL certificate string
 
-  * `tls_client_cert`: Identify HTTPS client using this SSL certificate string
-
-  * `tls_client_key`: Identify HTTPS client using this SSL key string
+    * `tls_client_key`: Identify HTTPS client using this SSL key string

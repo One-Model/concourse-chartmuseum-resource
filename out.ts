@@ -14,7 +14,7 @@ import * as tmp from "tmp";
 import * as yaml from "yamljs";
 import { retry } from 'ts-retry-promise';
 
-import { retrieveRequestFromStdin, createFetchAgent, createFetchHeaders } from "./index";
+import { retrieveRequestFromStdin, createFetchAgent, createFetchHeaders, Repository } from "./index";
 import { OutRequest, OutResponse } from "./index";
 
 const exec = util.promisify(child_process.exec);
@@ -127,7 +127,7 @@ export default async function out(): Promise<{ data: Object, cleanupCallback: ((
     // Add Remote Helm Repo Dependencies
     if (request.params.dependency_repos != null) {
         process.stderr.write(`Processing chart Helm Repo Dependencies...\n`)
-        for (let repo of request.params.dependency_repos) {
+        for (const [name, repo] of Object.entries(request.params.dependency_repos)) {
             let addCmd = [
                 "helm",
                 "repo",
@@ -161,13 +161,11 @@ export default async function out(): Promise<{ data: Object, cleanupCallback: ((
                 addCmd.push(keyFile);
             }
             
-            if (repo.name != null) {
-                addCmd.push(repo.name);
-            }
+            addCmd.push(name);
             addCmd.push(repo.server_url);
 
             try {
-                process.stderr.write(`Performing \"helm add ${repo.name} ${repo.server_url}\"...\n`);
+                process.stderr.write(`Performing \"helm add ${name} ${repo.server_url}\"...\n`);
                 await exec(addCmd.join(" "));
             } catch (e) {
                 if (e.stderr != null) {

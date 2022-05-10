@@ -41,7 +41,6 @@ export function createFetchHeaders<R extends CheckRequest>(request: R): Headers 
 }
 
 export interface Repository {
-    name?: string
     server_url: string
     basic_auth_username?: string
     basic_auth_password?: string
@@ -104,7 +103,7 @@ export interface OutRequest extends Request {
         version_file?: string
         force?: boolean
         dependency_update?: boolean
-        dependency_repos?: Repository[]
+        dependency_repos?: {[name: string]: Repository}
     }
 }
 
