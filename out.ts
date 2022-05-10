@@ -141,13 +141,17 @@ export default async function out(): Promise<{ data: Object, cleanupCallback: ((
                 addCmd.push(repo.basic_auth_password );
             }
 
-            if (repo.tls_ca_cert != null && repo.tls_client_cert != null && repo.tls_client_key != null) {
-                const tlsDir = await createTmpDir();
+            if (repo.tls_ca_cert != null) {
+                const caDir = await createTmpDir();
 
                 addCmd.push("--ca-file");
-                let caFile = path.resolve(tlsDir.path, "ca.pem");
+                let caFile = path.resolve(caDir.path, "ca.pem");
                 await writeFile(caFile, repo.tls_ca_cert);
                 addCmd.push(caFile);
+            }
+
+            if (repo.tls_client_cert != null && repo.tls_client_key != null) {
+                const tlsDir = await createTmpDir();
 
                 addCmd.push("--cert-file");
                 let certFile = path.resolve(tlsDir.path, "cert.pem");

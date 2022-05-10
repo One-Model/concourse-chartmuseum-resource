@@ -21,8 +21,11 @@ export function createFetchAgent<R extends CheckRequest>(request: R): Agent {
         keepAlive: false
     };
 
-    if (request.source.tls_ca_cert != null && request.source.tls_client_cert != null && request.source.tls_client_key != null) {
+    if (request.source.tls_ca_cert) {
         options.ca = request.source.tls_ca_cert;
+    }
+
+    if (request.source.tls_client_cert != null && request.source.tls_client_key != null) {
         options.cert = request.source.tls_client_cert;
         options.key = request.source.tls_client_key;
     }
