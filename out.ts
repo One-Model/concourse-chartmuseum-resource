@@ -124,6 +124,61 @@ export default async function out(): Promise<{ data: Object, cleanupCallback: ((
         }
     }
 
+    // Add Remote Helm Repo Dependencies
+    if (request.params.dependency_repos != null) {
+        process.stderr.write(`Processing chart Helm Repo Dependencies...\n`)
+        for (let repo of request.params.dependency_repos) {
+            let addCmd = [
+                "helm",
+                "repo",
+                "add"
+            ];
+
+            if (repo.basic_auth_username != null && repo.basic_auth_password != null) {
+                addCmd.push("--username");
+                addCmd.push(repo.basic_auth_username );
+                addCmd.push("--password");
+                addCmd.push(repo.basic_auth_password );
+            }
+
+            if (repo.tls_ca_cert != null && repo.tls_client_cert != null && repo.tls_client_key != null) {
+                const tlsDir = await createTmpDir();
+
+                addCmd.push("--ca-file");
+                let caFile = path.resolve(tlsDir.path, "ca.pem");
+                await writeFile(caFile, repo.tls_ca_cert);
+                addCmd.push(caFile);
+
+                addCmd.push("--cert-file");
+                let certFile = path.resolve(tlsDir.path, "cert.pem");
+                await writeFile(certFile, repo.tls_client_cert);
+                addCmd.push(certFile);
+
+
+                addCmd.push("--key-file");
+                let keyFile = path.resolve(tlsDir.path, "key.pem");
+                await writeFile(keyFile, repo.tls_client_key);
+                addCmd.push(keyFile);
+            }
+            
+            if (repo.name != null) {
+                addCmd.push(repo.name);
+            }
+            addCmd.push(repo.server_url);
+
+            try {
+                process.stderr.write(`Performing \"helm add ${repo.name} ${repo.server_url}\"...\n`);
+                await exec(addCmd.join(" "));
+            } catch (e) {
+                if (e.stderr != null) {
+                    process.stderr.write(`${e.stderr}\n`);
+                }
+                process.stderr.write(`Adding Helm Repo failed.\n`);
+                process.exit(193);
+            }
+        }
+    }
+
     const chartLocation = path.resolve(request.params.chart);
     process.stderr.write(`Processing chart at "${chartLocation}"...\n`)
     let chartFile: string;

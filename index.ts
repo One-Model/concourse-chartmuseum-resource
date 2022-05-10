@@ -1,5 +1,5 @@
 import { Headers } from "node-fetch";
-import { Agent } from "https";
+import { Agent, AgentOptions } from "https";
 
 export async function retrieveRequestFromStdin<T extends any>(): Promise<T> {
     return new Promise<T>((resolve, reject) => {
@@ -17,22 +17,17 @@ export async function retrieveRequestFromStdin<T extends any>(): Promise<T> {
 }
 
 export function createFetchAgent<R extends CheckRequest>(request: R): Agent {
-    let options = {
-        ca: "",
-        cert: "",
-        key: "",
+    let options: AgentOptions = {
         keepAlive: false
     };
-    
+
     if (request.source.tls_ca_cert != null && request.source.tls_client_cert != null && request.source.tls_client_key != null) {
         options.ca = request.source.tls_ca_cert;
         options.cert = request.source.tls_client_cert;
         options.key = request.source.tls_client_key;
     }
 
-    const sslConfiguredAgent = new Agent(options);
-
-    return sslConfiguredAgent;
+    return new Agent(options);
 }
 
 export function createFetchHeaders<R extends CheckRequest>(request: R): Headers {
@@ -45,18 +40,24 @@ export function createFetchHeaders<R extends CheckRequest>(request: R): Headers 
     return headers;
 }
 
+export interface Repository {
+    name?: string
+    server_url: string
+    basic_auth_username?: string
+    basic_auth_password?: string
+    tls_ca_cert?: string
+    tls_client_cert?: string
+    tls_client_key?: string
+}
+
 interface Request {
-    source: {
-        server_url: string
-        chart_name: string
-        version_range?: string
-        basic_auth_username?: string
-        basic_auth_password?: string
-        harbor_api?: boolean
-        tls_ca_cert?: string
-        tls_client_cert?: string
-        tls_client_key?: string
-    }
+    source: Source
+}
+
+export interface Source extends Repository {
+    chart_name: string
+    version_range?: string
+    harbor_api?: boolean
 }
 
 export interface CheckRequest extends Request {
@@ -103,6 +104,7 @@ export interface OutRequest extends Request {
         version_file?: string
         force?: boolean
         dependency_update?: boolean
+        dependency_repos?: Repository[]
     }
 }
 
